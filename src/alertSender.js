@@ -60,10 +60,16 @@ class AlertSender {
     setupEventHandlers() {
         this.client.on('qr', (qr) => {
             console.log('📱 WhatsApp QR Code received. Please scan with your phone:');
-            console.log('🌐 Or visit: http://localhost:' + (process.env.WEB_PORT || 3000));
-            console.log(qr);
+            const webUrl = process.env.NODE_ENV === 'production' 
+                ? `https://${process.env.RENDER_EXTERNAL_HOSTNAME}`
+                : `http://localhost:${process.env.WEB_PORT || 3000}`;
+            console.log(`🌐 QR Code URL: ${webUrl}`);
             this.webInterface.updateQR(qr);
             logToFile('INFO: WhatsApp QR code generated. Please scan to authenticate.');
+        });
+
+        this.client.on('loading_screen', (percent, message) => {
+            console.log(`📱 WhatsApp loading: ${percent}% - ${message}`);
         });
 
         this.client.on('ready', () => {
@@ -87,6 +93,7 @@ class AlertSender {
         this.client.on('disconnected', (reason) => {
             console.log('❌ WhatsApp client disconnected:', reason);
             this.isReady = false;
+            this.webInterface.isAuthenticated = false;
             logToFile(`ERROR: WhatsApp client disconnected - ${reason}`);
         });
 
@@ -104,19 +111,31 @@ class AlertSender {
      */
     async initialize() {
         try {
-            // Start web interface first
+            // Start web interface first - this MUST bind to a port for Render
+            console.log('🌐 Starting web interface...');
             await this.webInterface.start();
             
             if (!this.skipWhatsApp && this.client) {
-                await this.client.initialize();
+                console.log('📱 Initializing WhatsApp client...');
+                // Don't await client initialization - let it happen in background
+                this.client.initialize().catch(error => {
+                    console.error('❌ WhatsApp client initialization failed:', error.message);
+                    logToFile(`ERROR: WhatsApp client initialization failed - ${error.message}`);
+                    this.skipWhatsApp = true;
+                });
             }
             
             return true;
         } catch (error) {
-            console.error('❌ Failed to initialize WhatsApp client:', error);
-            logToFile(`ERROR: Failed to initialize WhatsApp client - ${error.message}`);
+            console.error('❌ Failed to initialize AlertSender:', error);
+            logToFile(`ERROR: Failed to initialize AlertSender - ${error.message}`);
             
-            // Fallback: continue without WhatsApp
+            // For web interface failures, this is critical - don't continue
+            if (error.message.includes('web interface') || error.message.includes('port')) {
+                throw error;
+            }
+            
+            // For WhatsApp failures, continue without WhatsApp
             console.log('⚠️ Continuing without WhatsApp integration');
             this.skipWhatsApp = true;
             return true;

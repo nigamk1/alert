@@ -242,7 +242,25 @@ class WebInterface {
             res.status(200).json({
                 status: 'ok',
                 timestamp: new Date().toISOString(),
-                service: 'nifty-alert-system'
+                service: 'nifty-alert-system',
+                port: this.port,
+                authenticated: this.isAuthenticated,
+                uptime: process.uptime()
+            });
+        });
+
+        // Root endpoint to show service is running
+        this.app.get('/ping', (req, res) => {
+            res.status(200).send('pong');
+        });
+
+        // API endpoint to check if system is ready
+        this.app.get('/ready', (req, res) => {
+            res.status(200).json({
+                status: 'ready',
+                webInterface: true,
+                whatsappReady: this.isAuthenticated,
+                timestamp: new Date().toISOString()
             });
         });
     }
@@ -252,18 +270,34 @@ class WebInterface {
      */
     async start() {
         try {
-            // Find an available port
-            this.port = await findAvailablePort(this.port);
+            // In production (Render), use the PORT environment variable
+            if (process.env.NODE_ENV === 'production' && process.env.PORT) {
+                this.port = parseInt(process.env.PORT);
+                console.log(`🌐 Production mode: Using port ${this.port}`);
+            } else {
+                // Find an available port for development
+                this.port = await findAvailablePort(this.port);
+            }
             
             return new Promise((resolve, reject) => {
-                this.server = this.app.listen(this.port, (err) => {
+                this.server = this.app.listen(this.port, '0.0.0.0', (err) => {
                     if (err) {
                         reject(err);
                     } else {
                         console.log(`🌐 Web interface started at http://localhost:${this.port}`);
+                        if (process.env.NODE_ENV === 'production') {
+                            console.log(`🌐 Production URL: https://${process.env.RENDER_EXTERNAL_HOSTNAME || 'your-app.onrender.com'}`);
+                        }
                         logToFile(`INFO: Web interface started on port ${this.port}`);
                         resolve();
                     }
+                });
+                
+                // Handle server errors
+                this.server.on('error', (error) => {
+                    console.error('❌ Web server error:', error);
+                    logToFile(`ERROR: Web server error - ${error.message}`);
+                    reject(error);
                 });
             });
         } catch (error) {

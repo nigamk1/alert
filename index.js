@@ -100,12 +100,21 @@ class AlertSystem {
     /**
      * Wait for WhatsApp client to be ready
      */
-    async waitForWhatsApp(maxWaitTime = 60000) {
+    async waitForWhatsApp(maxWaitTime = 180000) { // Increased to 3 minutes
         const startTime = Date.now();
+        let lastLogTime = 0;
         
         while (!this.alertSender.isClientReady() && (Date.now() - startTime) < maxWaitTime) {
-            console.log('⏳ Waiting for WhatsApp client...');
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            const currentTime = Date.now();
+            
+            // Log every 15 seconds instead of every 2 seconds
+            if (currentTime - lastLogTime > 15000) {
+                const elapsed = Math.floor((currentTime - startTime) / 1000);
+                console.log(`⏳ Waiting for WhatsApp client... (${elapsed}s elapsed)`);
+                lastLogTime = currentTime;
+            }
+            
+            await new Promise(resolve => setTimeout(resolve, 5000)); // Check every 5 seconds
         }
 
         if (!this.alertSender.isClientReady()) {

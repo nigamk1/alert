@@ -4,8 +4,9 @@
   "description": "Self-hosted EMA breakdown alert system for Nifty 50 options",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon index.js",
+    "start": "node start.js",
+    "start:direct": "node index.js",
+    "dev": "nodemon start.js",
     "test": "node index.js --test",
     "status": "node index.js --status",
     "build": "node -e \"require('fs').mkdirSync('logs', {recursive: true}); console.log('✅ Build completed')\"",
