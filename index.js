@@ -73,7 +73,7 @@ class AlertSystem {
 
             // Wait for WhatsApp to be ready
         console.log('📱 Waiting for WhatsApp client to be ready...');
-        const webPort = process.env.PORT || process.env.WEB_PORT || 3000;
+        const webPort = this.alertSender.webInterface.port;
         const baseUrl = process.env.NODE_ENV === 'production' 
             ? `https://${process.env.RENDER_EXTERNAL_HOSTNAME}` 
             : `http://localhost:${webPort}`;
@@ -209,7 +209,9 @@ System has been stopped and will no longer monitor for signals.`;
         console.log(`📊 Volume SMA: ${process.env.VOLUME_SMA_PERIOD} periods`);
         console.log(`📈 Min Body Size: ${process.env.MIN_BODY_SIZE_PERCENT}%`);
         console.log(`🏪 Market Status: ${isMarketOpen() ? '🟢 Open' : '🔴 Closed'}`);
-        const webPort = process.env.PORT || process.env.WEB_PORT || 3000;
+        const webPort = this.alertSender && this.alertSender.webInterface 
+            ? this.alertSender.webInterface.port 
+            : process.env.PORT || process.env.WEB_PORT || 3000;
         const baseUrl = process.env.NODE_ENV === 'production' 
             ? `https://${process.env.RENDER_EXTERNAL_HOSTNAME}` 
             : `http://localhost:${webPort}`;

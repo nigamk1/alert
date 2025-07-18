@@ -1,6 +1,7 @@
 const express = require('express');
 const qrcode = require('qrcode');
 const { logToFile } = require('./utils');
+const { findAvailablePort } = require('./portUtils');
 
 /**
  * Web interface for displaying WhatsApp QR codes
@@ -249,18 +250,27 @@ class WebInterface {
     /**
      * Start the web server
      */
-    start() {
-        return new Promise((resolve, reject) => {
-            this.server = this.app.listen(this.port, (err) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    console.log(`🌐 Web interface started at http://localhost:${this.port}`);
-                    logToFile(`INFO: Web interface started on port ${this.port}`);
-                    resolve();
-                }
+    async start() {
+        try {
+            // Find an available port
+            this.port = await findAvailablePort(this.port);
+            
+            return new Promise((resolve, reject) => {
+                this.server = this.app.listen(this.port, (err) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        console.log(`🌐 Web interface started at http://localhost:${this.port}`);
+                        logToFile(`INFO: Web interface started on port ${this.port}`);
+                        resolve();
+                    }
+                });
             });
-        });
+        } catch (error) {
+            console.error('❌ Failed to start web interface:', error.message);
+            logToFile(`ERROR: Failed to start web interface - ${error.message}`);
+            throw error;
+        }
     }
 
     /**
@@ -268,9 +278,14 @@ class WebInterface {
      */
     stop() {
         if (this.server) {
-            this.server.close();
-            console.log('🌐 Web interface stopped');
-            logToFile('INFO: Web interface stopped');
+            try {
+                this.server.close();
+                console.log('🌐 Web interface stopped');
+                logToFile('INFO: Web interface stopped');
+            } catch (error) {
+                console.error('⚠️ Error stopping web interface:', error.message);
+                logToFile(`WARNING: Error stopping web interface - ${error.message}`);
+            }
         }
     }
 

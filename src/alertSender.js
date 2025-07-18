@@ -276,12 +276,22 @@ ${errorMessage}
      */
     async destroy() {
         if (this.client) {
-            await this.client.destroy();
-            this.isReady = false;
-            logToFile('INFO: WhatsApp client destroyed');
+            try {
+                await this.client.destroy();
+                this.isReady = false;
+                logToFile('INFO: WhatsApp client destroyed');
+            } catch (error) {
+                console.error('⚠️ Error destroying WhatsApp client:', error.message);
+                logToFile(`WARNING: Error destroying WhatsApp client - ${error.message}`);
+            }
         }
         if (this.webInterface) {
-            this.webInterface.stop();
+            try {
+                this.webInterface.stop();
+            } catch (error) {
+                console.error('⚠️ Error stopping web interface:', error.message);
+                logToFile(`WARNING: Error stopping web interface - ${error.message}`);
+            }
         }
     }
 }

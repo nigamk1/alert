@@ -8,8 +8,10 @@
     "dev": "nodemon index.js",
     "test": "node index.js --test",
     "status": "node index.js --status",
-    "build": "chmod +x build.sh && ./build.sh",
-    "postinstall": "mkdir -p logs"
+    "build": "node -e \"require('fs').mkdirSync('logs', {recursive: true}); console.log('✅ Build completed')\"",
+    "build:windows": "build.bat",
+    "build:unix": "chmod +x build.sh && ./build.sh",
+    "postinstall": "node -e \"require('fs').mkdirSync('logs', {recursive: true}); console.log('📁 Logs directory created')\""
   },
   "keywords": ["nifty", "options", "trading", "alerts", "whatsapp", "ema"],
   "author": "Your Name",
