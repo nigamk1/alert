@@ -1,0 +1,22 @@
+# Render Build Configuration
+version: 1
+
+services:
+  - type: web
+    name: nifty-alert-system
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: WEB_PORT
+        value: 3000
+    healthCheckPath: /status
+    disk:
+      name: logs
+      mountPath: /app/logs
+      sizeGB: 1

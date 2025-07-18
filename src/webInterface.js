@@ -9,7 +9,7 @@ class WebInterface {
     constructor() {
         this.app = express();
         this.server = null;
-        this.port = process.env.WEB_PORT || 3000;
+        this.port = process.env.PORT || process.env.WEB_PORT || 3000;
         this.currentQR = null;
         this.isAuthenticated = false;
         this.setupRoutes();
@@ -224,7 +224,18 @@ class WebInterface {
             res.json({
                 authenticated: this.isAuthenticated,
                 hasQR: !!this.currentQR,
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
+                status: 'healthy',
+                uptime: process.uptime()
+            });
+        });
+
+        // Health check endpoint for Render
+        this.app.get('/health', (req, res) => {
+            res.status(200).json({
+                status: 'ok',
+                timestamp: new Date().toISOString(),
+                service: 'nifty-alert-system'
             });
         });
     }

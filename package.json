@@ -5,7 +5,10 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "dev": "nodemon index.js"
+    "dev": "nodemon index.js",
+    "test": "node index.js --test",
+    "status": "node index.js --status",
+    "build": "npm install --production"
   },
   "keywords": ["nifty", "options", "trading", "alerts", "whatsapp", "ema"],
   "author": "Your Name",
@@ -22,5 +25,9 @@
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
   }
 }

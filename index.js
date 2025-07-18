@@ -73,7 +73,11 @@ class AlertSystem {
 
             // Wait for WhatsApp to be ready
         console.log('📱 Waiting for WhatsApp client to be ready...');
-        console.log('🌐 QR Code available at: http://localhost:' + (process.env.WEB_PORT || 3000));
+        const webPort = process.env.PORT || process.env.WEB_PORT || 3000;
+        const baseUrl = process.env.NODE_ENV === 'production' 
+            ? `https://${process.env.RENDER_EXTERNAL_HOSTNAME}` 
+            : `http://localhost:${webPort}`;
+        console.log(`🌐 QR Code available at: ${baseUrl}`);
         await this.waitForWhatsApp();            // Start scheduler
             this.scheduler.start();
 
@@ -205,7 +209,11 @@ System has been stopped and will no longer monitor for signals.`;
         console.log(`📊 Volume SMA: ${process.env.VOLUME_SMA_PERIOD} periods`);
         console.log(`📈 Min Body Size: ${process.env.MIN_BODY_SIZE_PERCENT}%`);
         console.log(`🏪 Market Status: ${isMarketOpen() ? '🟢 Open' : '🔴 Closed'}`);
-        console.log(`🌐 Web Interface: http://localhost:${process.env.WEB_PORT || 3000}`);
+        const webPort = process.env.PORT || process.env.WEB_PORT || 3000;
+        const baseUrl = process.env.NODE_ENV === 'production' 
+            ? `https://${process.env.RENDER_EXTERNAL_HOSTNAME}` 
+            : `http://localhost:${webPort}`;
+        console.log(`🌐 Web Interface: ${baseUrl}`);
         console.log('='.repeat(50));
         console.log('\n🚨 ENTRY CONDITIONS:');
         console.log('1. Signal candle entirely above EMA5 ✅');
