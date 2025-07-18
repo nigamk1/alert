@@ -11,14 +11,47 @@ class AlertSender {
         this.isReady = false;
         this.targetNumber = process.env.WHATSAPP_TARGET;
         this.webInterface = new WebInterface();
-        this.skipWhatsApp = process.env.SKIP_WHATSAPP === 'true';
+        
+        // Smart WhatsApp skipping for production environments
+        this.skipWhatsApp = this.shouldSkipWhatsApp();
         
         if (!this.skipWhatsApp) {
             this.initializeClient();
         } else {
-            console.log('⚠️ WhatsApp integration skipped (SKIP_WHATSAPP=true)');
+            console.log('⚠️ WhatsApp integration skipped');
             logToFile('INFO: WhatsApp integration skipped');
         }
+    }
+
+    /**
+     * Determine if WhatsApp should be skipped based on environment
+     */
+    shouldSkipWhatsApp() {
+        // Explicit skip setting
+        if (process.env.SKIP_WHATSAPP === 'true') {
+            return true;
+        }
+        
+        // Auto-skip in production environments that commonly have issues
+        if (process.env.NODE_ENV === 'production') {
+            // Check for common production indicators
+            const productionIndicators = [
+                process.env.RENDER,
+                process.env.HEROKU,
+                process.env.VERCEL,
+                process.env.NETLIFY,
+                process.env.RAILWAY,
+                process.env.FLY_APP_NAME
+            ];
+            
+            if (productionIndicators.some(indicator => indicator)) {
+                console.log('🌐 Production environment detected, skipping WhatsApp for stability');
+                logToFile('INFO: Production environment detected, WhatsApp skipped for stability');
+                return true;
+            }
+        }
+        
+        return false;
     }
 
     /**
@@ -28,8 +61,9 @@ class AlertSender {
         // Clean up any existing auth files that might be locked
         this.cleanupAuthFiles();
         
-        // Puppeteer configuration for Render and other cloud platforms
+        // Enhanced Puppeteer configuration for production environments
         const puppeteerConfig = {
+            headless: true,
             args: [
                 '--no-sandbox',
                 '--disable-setuid-sandbox',
@@ -40,13 +74,70 @@ class AlertSender {
                 '--single-process',
                 '--disable-gpu',
                 '--disable-web-security',
-                '--disable-features=VizDisplayCompositor'
-            ]
+                '--disable-features=VizDisplayCompositor',
+                '--disable-extensions',
+                '--disable-background-timer-throttling',
+                '--disable-backgrounding-occluded-windows',
+                '--disable-renderer-backgrounding',
+                '--disable-field-trial-config',
+                '--disable-back-forward-cache',
+                '--disable-hang-monitor',
+                '--disable-prompt-on-repost',
+                '--disable-sync',
+                '--disable-translate',
+                '--disable-ipc-flooding-protection',
+                '--disable-default-apps',
+                '--disable-component-update',
+                '--disable-client-side-phishing-detection',
+                '--disable-background-networking',
+                '--disable-features=TranslateUI',
+                '--disable-features=BlinkGenPropertyTrees',
+                '--disable-features=VizDisplayCompositor',
+                '--disable-features=AudioServiceOutOfProcess',
+                '--disable-features=VizServiceDisplayCompositor',
+                '--disable-features=VizMapsDisplayCompositor',
+                '--no-default-browser-check',
+                '--no-pings',
+                '--password-store=basic',
+                '--use-mock-keychain',
+                '--user-data-dir=/tmp/user-data',
+                '--data-path=/tmp/data-path',
+                '--homedir=/tmp',
+                '--disk-cache-dir=/tmp/cache-dir'
+            ],
+            ignoreHTTPSErrors: true,
+            ignoreDefaultArgs: ['--disable-extensions'],
+            defaultViewport: {
+                width: 1366,
+                height: 768
+            }
         };
 
-        // Use system Chrome if available (for Render)
+        // Use system Chrome if available (for production environments like Render)
         if (process.env.PUPPETEER_EXECUTABLE_PATH) {
             puppeteerConfig.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
+        } else if (process.env.NODE_ENV === 'production') {
+            // Try common Chrome paths for production
+            const fs = require('fs');
+            const chromePaths = [
+                '/usr/bin/google-chrome',
+                '/usr/bin/google-chrome-stable',
+                '/usr/bin/chromium-browser',
+                '/usr/bin/chromium',
+                '/snap/bin/chromium'
+            ];
+            
+            for (const path of chromePaths) {
+                try {
+                    if (fs.existsSync(path)) {
+                        puppeteerConfig.executablePath = path;
+                        console.log(`📱 Using Chrome at: ${path}`);
+                        break;
+                    }
+                } catch (e) {
+                    // Continue checking other paths
+                }
+            }
         }
 
         this.client = new Client({
@@ -172,6 +263,18 @@ class AlertSender {
                         console.log('   3. For production, use system Chrome with PUPPETEER_EXECUTABLE_PATH');
                         console.log('');
                         console.log('ℹ️  The system will continue running without WhatsApp integration.');
+                        console.log('');
+                    } else if (error.message.includes('Protocol error') || error.message.includes('Target closed')) {
+                        console.log('');
+                        console.log('💡 PRODUCTION ENVIRONMENT DETECTED:');
+                        console.log('🔧 Chrome DevTools Protocol error - this is common in production.');
+                        console.log('🔧 Recommended solutions:');
+                        console.log('   1. Set SKIP_WHATSAPP=true for production deployment');
+                        console.log('   2. Use a different notification method (email, webhook, etc.)');
+                        console.log('   3. Run WhatsApp client on a separate server with full Chrome support');
+                        console.log('');
+                        console.log('ℹ️  The alert system will continue running without WhatsApp.');
+                        console.log('ℹ️  All alerts will be logged and can be accessed via the web interface.');
                         console.log('');
                     }
                     

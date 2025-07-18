@@ -77,6 +77,38 @@ function checkEnvironment() {
                 console.log(`⚠️  ${varName}: NOT SET (recommended for production)`);
             }
         });
+        
+        // Check for production platforms
+        console.log('\n🌐 Production Platform Detection:');
+        const platforms = {
+            'RENDER': process.env.RENDER,
+            'HEROKU': process.env.HEROKU,
+            'VERCEL': process.env.VERCEL,
+            'NETLIFY': process.env.NETLIFY,
+            'RAILWAY': process.env.RAILWAY,
+            'FLY_APP_NAME': process.env.FLY_APP_NAME
+        };
+        
+        let platformDetected = false;
+        Object.entries(platforms).forEach(([platform, value]) => {
+            if (value) {
+                console.log(`✅ ${platform} detected: ${value}`);
+                platformDetected = true;
+            }
+        });
+        
+        if (!platformDetected) {
+            console.log('ℹ️  No specific platform detected');
+        }
+        
+        // WhatsApp recommendations for production
+        console.log('\n📱 WhatsApp Configuration for Production:');
+        if (process.env.SKIP_WHATSAPP === 'true') {
+            console.log('✅ SKIP_WHATSAPP=true (recommended for production)');
+        } else {
+            console.log('⚠️  SKIP_WHATSAPP not set - WhatsApp may fail in production');
+            console.log('💡 Consider setting SKIP_WHATSAPP=true for better reliability');
+        }
     }
     
     // Check directories
