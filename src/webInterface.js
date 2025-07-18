@@ -136,10 +136,10 @@ class WebInterface {
 <body>
     <div class="container">
         <h1>📱 Nifty Alert System</h1>
-        <h2>WhatsApp QR Code Authentication</h2>
+        <h2 id="main-title">WhatsApp QR Code Authentication</h2>
         
         <div id="status" class="status waiting">
-            🔄 Waiting for QR code...
+            🔄 Checking system status...
         </div>
         
         <div class="qr-container">
@@ -178,7 +178,29 @@ class WebInterface {
                     const statusDiv = document.getElementById('status');
                     const qrDiv = document.getElementById('qr-code');
                     
-                    if (data.authenticated) {
+                    if (data.skipped) {
+                        document.getElementById('main-title').innerHTML = 'Production System Status';
+                        statusDiv.className = 'status success';
+                        statusDiv.innerHTML = '🌐 Production Mode - WhatsApp Disabled for Stability';
+                        qrDiv.innerHTML = '<div style="padding: 20px; background: #e3f2fd; border-radius: 10px;">' +
+                            '<h3 style="color: #1976d2; margin-top: 0;">🚀 System Running in Production Mode</h3>' +
+                            '<p style="color: #333; margin: 10px 0;">WhatsApp integration is disabled for better stability on production servers.</p>' +
+                            '<div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 15px 0; text-align: left;">' +
+                            '<h4 style="margin-top: 0; color: #333;">✅ What\'s Working:</h4>' +
+                            '<ul style="margin: 0; padding-left: 20px; color: #555;">' +
+                            '<li>Alert detection system</li>' +
+                            '<li>EMA breakdown strategy</li>' +
+                            '<li>Data fetching and analysis</li>' +
+                            '<li>Web interface and health checks</li>' +
+                            '</ul>' +
+                            '</div>' +
+                            '<div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin: 15px 0; text-align: left;">' +
+                            '<h4 style="margin-top: 0; color: #856404;">📝 Alert Notifications:</h4>' +
+                            '<p style="margin: 0; color: #856404;">All alerts are being logged to the server logs. Check your hosting platform\'s log viewer to see alert notifications.</p>' +
+                            '</div>' +
+                            '</div>';
+                        clearInterval(refreshInterval);
+                    } else if (data.authenticated) {
                         statusDiv.className = 'status success';
                         statusDiv.innerHTML = '✅ WhatsApp Connected Successfully!';
                         qrDiv.innerHTML = '<p style="color: green; font-size: 18px;">✅ Authentication Complete!</p>';
@@ -272,6 +294,31 @@ class WebInterface {
                 webInterface: true,
                 whatsappReady: this.isAuthenticated,
                 timestamp: new Date().toISOString()
+            });
+        });
+
+        // Production status endpoint
+        this.app.get('/production-status', (req, res) => {
+            const isProduction = process.env.NODE_ENV === 'production';
+            const whatsappSkipped = process.env.SKIP_WHATSAPP === 'true';
+            
+            res.json({
+                environment: isProduction ? 'production' : 'development',
+                whatsappEnabled: !whatsappSkipped,
+                whatsappAuthenticated: this.isAuthenticated,
+                platform: process.env.RENDER ? 'render' : 
+                          process.env.HEROKU ? 'heroku' : 
+                          process.env.VERCEL ? 'vercel' : 'unknown',
+                status: 'running',
+                uptime: process.uptime(),
+                timestamp: new Date().toISOString(),
+                features: {
+                    alertDetection: true,
+                    emaStrategy: true,
+                    dataFetching: true,
+                    webInterface: true,
+                    healthCheck: true
+                }
             });
         });
     }
