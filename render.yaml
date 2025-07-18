@@ -6,7 +6,7 @@ services:
     name: nifty-alert-system
     env: node
     plan: free
-    buildCommand: npm install
+    buildCommand: npm run build
     startCommand: npm start
     envVars:
       - key: NODE_ENV
@@ -15,7 +15,11 @@ services:
         value: 3000
       - key: WEB_PORT
         value: 3000
-    healthCheckPath: /status
+      - key: PUPPETEER_SKIP_CHROMIUM_DOWNLOAD
+        value: true
+      - key: PUPPETEER_EXECUTABLE_PATH
+        value: /usr/bin/google-chrome-stable
+    healthCheckPath: /health
     disk:
       name: logs
       mountPath: /app/logs

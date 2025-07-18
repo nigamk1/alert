@@ -11,27 +11,44 @@ class AlertSender {
         this.isReady = false;
         this.targetNumber = process.env.WHATSAPP_TARGET;
         this.webInterface = new WebInterface();
-        this.initializeClient();
+        this.skipWhatsApp = process.env.SKIP_WHATSAPP === 'true';
+        
+        if (!this.skipWhatsApp) {
+            this.initializeClient();
+        } else {
+            console.log('⚠️ WhatsApp integration skipped (SKIP_WHATSAPP=true)');
+            logToFile('INFO: WhatsApp integration skipped');
+        }
     }
 
     /**
      * Initialize WhatsApp client
      */
     initializeClient() {
+        // Puppeteer configuration for Render and other cloud platforms
+        const puppeteerConfig = {
+            args: [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-accelerated-2d-canvas',
+                '--no-first-run',
+                '--no-zygote',
+                '--single-process',
+                '--disable-gpu',
+                '--disable-web-security',
+                '--disable-features=VizDisplayCompositor'
+            ]
+        };
+
+        // Use system Chrome if available (for Render)
+        if (process.env.PUPPETEER_EXECUTABLE_PATH) {
+            puppeteerConfig.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
+        }
+
         this.client = new Client({
             authStrategy: new LocalAuth(),
-            puppeteer: {
-                args: [
-                    '--no-sandbox',
-                    '--disable-setuid-sandbox',
-                    '--disable-dev-shm-usage',
-                    '--disable-accelerated-2d-canvas',
-                    '--no-first-run',
-                    '--no-zygote',
-                    '--single-process',
-                    '--disable-gpu'
-                ]
-            }
+            puppeteer: puppeteerConfig
         });
 
         this.setupEventHandlers();
@@ -89,12 +106,20 @@ class AlertSender {
         try {
             // Start web interface first
             await this.webInterface.start();
-            await this.client.initialize();
+            
+            if (!this.skipWhatsApp && this.client) {
+                await this.client.initialize();
+            }
+            
             return true;
         } catch (error) {
             console.error('❌ Failed to initialize WhatsApp client:', error);
             logToFile(`ERROR: Failed to initialize WhatsApp client - ${error.message}`);
-            return false;
+            
+            // Fallback: continue without WhatsApp
+            console.log('⚠️ Continuing without WhatsApp integration');
+            this.skipWhatsApp = true;
+            return true;
         }
     }
 
@@ -106,6 +131,13 @@ class AlertSender {
      */
     async sendMessage(to, message) {
         try {
+            if (this.skipWhatsApp) {
+                console.log('📱 WhatsApp skipped - Message would be:');
+                console.log(message);
+                logToFile(`WHATSAPP_SKIPPED: ${message}`);
+                return true;
+            }
+            
             if (!this.isReady) {
                 console.log('⚠️ WhatsApp client not ready. Message queued.');
                 logToFile('WARNING: WhatsApp client not ready for sending message');

@@ -201,7 +201,13 @@ class WebInterface {
 
         // API endpoint for QR code
         this.app.get('/qr', (req, res) => {
-            if (this.isAuthenticated) {
+            if (process.env.SKIP_WHATSAPP === 'true') {
+                res.json({ 
+                    skipped: true, 
+                    message: 'WhatsApp integration is currently disabled',
+                    authenticated: false 
+                });
+            } else if (this.isAuthenticated) {
                 res.json({ authenticated: true });
             } else if (this.currentQR) {
                 // Convert QR string to image
