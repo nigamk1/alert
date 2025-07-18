@@ -121,6 +121,21 @@ class AlertSender {
                 this.client.initialize().catch(error => {
                     console.error('❌ WhatsApp client initialization failed:', error.message);
                     logToFile(`ERROR: WhatsApp client initialization failed - ${error.message}`);
+                    
+                    // Provide helpful guidance
+                    if (error.message.includes('Could not find expected browser')) {
+                        console.log('');
+                        console.log('💡 CHROMIUM INSTALLATION HELP:');
+                        console.log('🔧 The WhatsApp client needs Chromium to function.');
+                        console.log('🔧 Try one of these solutions:');
+                        console.log('   1. Run: npm install puppeteer@18.2.1');
+                        console.log('   2. Set SKIP_WHATSAPP=true to disable WhatsApp');
+                        console.log('   3. For production, use system Chrome with PUPPETEER_EXECUTABLE_PATH');
+                        console.log('');
+                        console.log('ℹ️  The system will continue running without WhatsApp integration.');
+                        console.log('');
+                    }
+                    
                     this.skipWhatsApp = true;
                 });
             }

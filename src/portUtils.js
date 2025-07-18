@@ -7,9 +7,17 @@ const net = require('net');
  */
 function checkPort(port) {
     return new Promise((resolve) => {
+        // Ensure port is a number and within valid range
+        const portNum = parseInt(port);
+        if (isNaN(portNum) || portNum < 1 || portNum > 65535) {
+            console.error(`❌ Invalid port number: ${port}`);
+            resolve(false);
+            return;
+        }
+        
         const server = net.createServer();
         
-        server.listen(port, () => {
+        server.listen(portNum, () => {
             server.close(() => {
                 resolve(true);
             });
@@ -28,8 +36,23 @@ function checkPort(port) {
  * @returns {Promise<number>} Available port
  */
 async function findAvailablePort(basePort = 3000, maxTries = 10) {
+    // Ensure basePort is a number and within valid range
+    const startPort = parseInt(basePort);
+    
+    if (isNaN(startPort) || startPort < 1 || startPort > 65535) {
+        console.error(`❌ Invalid base port: ${basePort}, using 3000`);
+        return await findAvailablePort(3000, maxTries);
+    }
+    
     for (let i = 0; i < maxTries; i++) {
-        const port = basePort + i;
+        const port = startPort + i;
+        
+        // Skip if port would exceed valid range
+        if (port > 65535) {
+            console.log(`⚠️ Port ${port} exceeds valid range, breaking`);
+            break;
+        }
+        
         const isAvailable = await checkPort(port);
         
         if (isAvailable) {
@@ -37,7 +60,7 @@ async function findAvailablePort(basePort = 3000, maxTries = 10) {
         }
     }
     
-    throw new Error(`No available port found starting from ${basePort}`);
+    throw new Error(`No available port found starting from ${startPort}`);
 }
 
 /**

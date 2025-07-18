@@ -10,7 +10,18 @@ class WebInterface {
     constructor() {
         this.app = express();
         this.server = null;
-        this.port = process.env.PORT || process.env.WEB_PORT || 3000;
+        
+        // Parse port as integer and ensure it's within valid range
+        const envPort = process.env.PORT || process.env.WEB_PORT || '3000';
+        let port = parseInt(envPort);
+        
+        // Validate port range
+        if (isNaN(port) || port < 1 || port > 65535) {
+            console.log(`⚠️ Invalid port ${port}, using default 3000`);
+            port = 3000;
+        }
+        
+        this.port = port;
         this.currentQR = null;
         this.isAuthenticated = false;
         this.setupRoutes();
@@ -274,6 +285,12 @@ class WebInterface {
             if (process.env.NODE_ENV === 'production' && process.env.PORT) {
                 this.port = parseInt(process.env.PORT);
                 console.log(`🌐 Production mode: Using port ${this.port}`);
+                
+                // Validate port range even in production
+                if (isNaN(this.port) || this.port < 1 || this.port > 65535) {
+                    console.error(`❌ Invalid port ${process.env.PORT}, falling back to 3000`);
+                    this.port = 3000;
+                }
             } else {
                 // Find an available port for development
                 this.port = await findAvailablePort(this.port);
