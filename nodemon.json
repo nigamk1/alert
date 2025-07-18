@@ -1,0 +1,15 @@
+{
+  "watch": ["src/", "index.js", "start.js"],
+  "ignore": ["logs/", "node_modules/", ".wwebjs_auth/", "*.log"],
+  "ext": "js,json",
+  "delay": 2000,
+  "signal": "SIGTERM",
+  "env": {
+    "NODE_ENV": "development"
+  },
+  "events": {
+    "restart": "echo '🔄 Restarting application...'",
+    "crash": "echo '💥 Application crashed. Cleaning up...'",
+    "start": "echo '🚀 Starting application...'"
+  }
+}

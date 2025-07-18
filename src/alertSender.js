@@ -25,6 +25,9 @@ class AlertSender {
      * Initialize WhatsApp client
      */
     initializeClient() {
+        // Clean up any existing auth files that might be locked
+        this.cleanupAuthFiles();
+        
         // Puppeteer configuration for Render and other cloud platforms
         const puppeteerConfig = {
             args: [
@@ -47,11 +50,47 @@ class AlertSender {
         }
 
         this.client = new Client({
-            authStrategy: new LocalAuth(),
+            authStrategy: new LocalAuth({
+                clientId: "alert-system",
+                dataPath: './.wwebjs_auth'
+            }),
             puppeteer: puppeteerConfig
         });
 
         this.setupEventHandlers();
+    }
+
+    /**
+     * Clean up auth files that might be locked
+     */
+    cleanupAuthFiles() {
+        try {
+            const fs = require('fs');
+            const path = require('path');
+            const authPath = path.join(process.cwd(), '.wwebjs_auth');
+            
+            if (fs.existsSync(authPath)) {
+                // Try to remove problematic files
+                const problematicFiles = [
+                    'session/Default/chrome_debug.log',
+                    'session/Default/SingletonLock',
+                    'session/Default/SingletonSocket'
+                ];
+                
+                problematicFiles.forEach(file => {
+                    try {
+                        const filePath = path.join(authPath, file);
+                        if (fs.existsSync(filePath)) {
+                            fs.unlinkSync(filePath);
+                        }
+                    } catch (e) {
+                        // File might be locked, ignore
+                    }
+                });
+            }
+        } catch (error) {
+            // Ignore cleanup errors
+        }
     }
 
     /**
@@ -311,7 +350,19 @@ ${errorMessage}
     async destroy() {
         if (this.client) {
             try {
-                await this.client.destroy();
+                console.log('📱 Gracefully shutting down WhatsApp client...');
+                
+                // Give WhatsApp client time to shut down gracefully
+                const shutdownPromise = new Promise((resolve) => {
+                    this.client.destroy().then(resolve).catch(resolve);
+                });
+                
+                // Wait for shutdown or timeout after 5 seconds
+                await Promise.race([
+                    shutdownPromise,
+                    new Promise(resolve => setTimeout(resolve, 5000))
+                ]);
+                
                 this.isReady = false;
                 logToFile('INFO: WhatsApp client destroyed');
             } catch (error) {

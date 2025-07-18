@@ -7,11 +7,13 @@
     "start": "node start.js",
     "start:direct": "node index.js",
     "dev": "nodemon start.js",
+    "dev:clean": "node cleanup-dev.js && npm run dev",
     "test": "node index.js --test",
     "status": "node index.js --status",
     "build": "node -e \"require('fs').mkdirSync('logs', {recursive: true}); console.log('✅ Build completed')\"",
     "build:windows": "build.bat",
     "build:unix": "chmod +x build.sh && ./build.sh",
+    "cleanup": "node cleanup-dev.js",
     "postinstall": "node -e \"require('fs').mkdirSync('logs', {recursive: true}); console.log('📁 Logs directory created')\""
   },
   "keywords": [
