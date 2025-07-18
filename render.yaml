@@ -6,7 +6,7 @@ services:
     name: nifty-alert-system
     env: node
     plan: free
-    buildCommand: npm run build
+    buildCommand: npm install --legacy-peer-deps && mkdir -p logs
     startCommand: npm start
     envVars:
       - key: NODE_ENV
@@ -19,6 +19,8 @@ services:
         value: true
       - key: PUPPETEER_EXECUTABLE_PATH
         value: /usr/bin/google-chrome-stable
+      - key: SKIP_WHATSAPP
+        value: true
     healthCheckPath: /health
     disk:
       name: logs

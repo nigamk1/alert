@@ -1,4 +1,4 @@
-# Render Build Script
+# Render Build Script - Simplified
 FROM node:18-alpine
 
 # Install dependencies for Puppeteer
@@ -14,6 +14,7 @@ RUN apk add --no-cache \
 
 # Tell Puppeteer to use installed Chromium
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 
 # Create app directory
 WORKDIR /app
@@ -21,8 +22,8 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --omit=dev
+# Install dependencies (use regular npm install instead of npm ci)
+RUN npm install --omit=dev --legacy-peer-deps
 
 # Copy source code
 COPY . .
